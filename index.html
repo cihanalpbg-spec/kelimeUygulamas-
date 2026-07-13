@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kelime Dünyası - Mobil & Tablet Öğrenme Uygulaması</title>
+    <!-- Google Font: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS Dosyası -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Harici Kütüphaneler (CDN) -->
+    <!-- Mammoth.js: Word (.docx) dosyalarını tarayıcıda okumak için -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- SheetJS (xlsx): Excel (.xlsx/.xls) ve CSV okumak için -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Canvas Confetti: Başarı anlarında konfeti patlatmak için -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- ÜST PANEL (HEADER) -->
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="logo-icon">🚀</span>
+                <div class="logo-text">
+                    <h1>Kelime Dünyası</h1>
+                    <p>Vocabulary Master</p>
+                </div>
+            </div>
+            <div class="header-stats">
+                <span class="stat-badge">
+                    <span class="badge-label">Toplam Kelime:</span>
+                    <span id="total-words-count" class="badge-value">0</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- ANA İÇERİK ALANI -->
+        <main class="app-main">
+            
+            <!-- SEKME 1: KELİME EKLEME EKRANI -->
+            <section id="tab-add" class="tab-content active">
+                <div class="section-title">
+                    <h2>Yeni Kelimeler Ekle</h2>
+                    <p>Listenize kelime eklemek için aşağıdaki yöntemlerden birini kullanın.</p>
+                </div>
+
+                <!-- Seçim Sekmeleri (Ekleme Yöntemi) -->
+                <div class="insert-methods-tabs">
+                    <button class="method-tab active" onclick="switchInsertMethod('manual')">Manuel Giriş</button>
+                    <button class="method-tab" onclick="switchInsertMethod('file')">Dosya Yükle (.docx, .xlsx, .csv)</button>
+                    <button class="method-tab" onclick="switchInsertMethod('paste')">Word/Excel'den Kopyala-Yapıştır</button>
+                </div>
+
+                <!-- Manuel Giriş Formu -->
+                <div id="method-manual" class="method-content active">
+                    <div class="input-card">
+                        <div class="input-group">
+                            <label for="input-english">İngilizce Kelime / İfade</label>
+                            <input type="text" id="input-english" placeholder="Örn: Accomplish, Apple, Go on..." autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-turkish">Türkçe Karşılığı / Anlamı</label>
+                            <input type="text" id="input-turkish" placeholder="Örn: Başarmak, Elma, Devam etmek..." autocomplete="off">
+                        </div>
+                        <button id="btn-save-manual" class="btn-primary" onclick="addWordManual()">
+                            <span class="btn-icon">＋</span> Kelimeyi Kaydet
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dosya Yükleme Alanı -->
+                <div id="method-file" class="method-content">
+                    <div class="file-upload-card" id="drop-zone">
+                        <div class="upload-icon">📁</div>
+                        <h3>Dosyayı Buraya Sürükleyin veya Seçin</h3>
+                        <p>Desteklenen formatlar: <strong>Word (.docx)</strong>, <strong>Excel (.xlsx, .xls)</strong> veya <strong>CSV (.csv)</strong></p>
+                        <p class="file-tip">⚠️ Dosyanızın ilk sütunu İngilizce kelimeleri, ikinci sütunu ise Türkçe anlamlarını içermelidir (Resimdeki şablon).</p>
+                        <input type="file" id="file-input" accept=".docx, .xlsx, .xls, .csv" style="display: none;" onchange="handleFileSelect(event)">
+                        <button class="btn-secondary" onclick="document.getElementById('file-input').click()">Dosya Seç</button>
+                        <div id="file-info" class="file-info-text"></div>
+                    </div>
+                </div>
+
+                <!-- Kopyala Yapıştır Alanı -->
+                <div id="method-paste" class="method-content">
+                    <div class="paste-card">
+                        <p class="paste-tip">Word veya Excel tablonuzdaki satırları kopyalayıp aşağıdaki alana yapıştırın. (Sütunlar arasında tab/boşluk olmalıdır)</p>
+                        <textarea id="paste-area" rows="6" placeholder="accomplish	başarmak&#10;challenge	meydan okumak&#10;opportunity	fırsat"></textarea>
+                        <button class="btn-primary" onclick="importFromPaste()">
+                            <span class="btn-icon">⚡</span> Yapıştırılan Kelimeleri Aktar
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEKME 2: KELİME LİSTESİ EKRANI -->
+            <section id="tab-list" class="tab-content">
+                <div class="list-controls">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="list-search" placeholder="Kelime ara (İngilizce veya Türkçe)..." oninput="renderWordList()">
+                    </div>
+                </div>
+
+                <div class="list-container">
+                    <div class="list-header-row">
+                        <div>İngilizce Kelime</div>
+                        <div>Türkçe Anlamı</div>
+                        <div>Eklenme Tarihi</div>
+                        <div style="text-align: center;">İşlem</div>
+                    </div>
+                    <div id="words-list-container" class="words-list">
+                        <!-- Kelimeler dinamik olarak buraya listelenecektir -->
+                        <div class="empty-state">
+                            <span class="empty-icon">📂</span>
+                            <p>Henüz kelime eklenmedi.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEKME 3: OYUNLAR VE DEĞERLENDİRME EKRANI -->
+            <section id="tab-games" class="tab-content">
+                
+                <!-- Oyun Seçim Menüsü -->
+                <div id="games-menu" class="games-grid">
+                    <div class="section-title" style="grid-column: 1 / -1;">
+                        <h2>Kelime Akademisi</h2>
+                        <p>Öğrendiğiniz kelimeleri pekiştirmek için eğlenceli aktiviteleri deneyin.</p>
+                    </div>
+
+                    <!-- Adam Asmaca Kartı -->
+                    <div class="game-card" onclick="startGame('hangman')">
+                        <div class="game-card-icon" style="background: linear-gradient(135deg, #ff5e62, #ff9966);">🪓</div>
+                        <div class="game-card-body">
+                            <h3>Adam Asmaca</h3>
+                            <p>Gizli İngilizce kelimeleri harf tahminleriyle asılmadan bulmaya çalışın.</p>
+                            <span class="play-btn">Oyna →</span>
+                        </div>
+                    </div>
+
+                    <!-- Kelime Eşleştirme Kartı -->
+                    <div class="game-card" onclick="startGame('matching')">
+                        <div class="game-card-icon" style="background: linear-gradient(135deg, #8a2be2, #4a00e0);">🃏</div>
+                        <div class="game-card-body">
+                            <h3>Kelime Eşleştirme</h3>
+                            <p>İngilizce kelimeler ile Türkçe karşılıklarını eşleştirin, hafızanızı test edin.</p>
+                            <span class="play-btn">Oyna →</span>
+                        </div>
+                    </div>
+
+                    <!-- Soru-Cevap Kartı -->
+                    <div class="game-card" onclick="startGame('flashcards')">
+                        <div class="game-card-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">❓</div>
+                        <div class="game-card-body">
+                            <h3>Soru & Cevap (Quiz)</h3>
+                            <p>Kartları çevirin, kelimelerin anlamlarını yön tercihinize göre tahmin edin.</p>
+                            <span class="play-btn">Oyna →</span>
+                        </div>
+                    </div>
+
+                    <!-- 5 Şıklı Test Kartı (Dinamik Kilit) -->
+                    <div class="game-card" id="card-multiple-choice" onclick="startMultipleChoiceGame()">
+                        <div class="game-card-icon" id="mc-icon-bg" style="background: linear-gradient(135deg, #f2994a, #f2c94c);">📝</div>
+                        <div class="game-card-body">
+                            <div class="mc-title-container">
+                                <h3>5 Şıklı Değerlendirme Testi</h3>
+                                <span id="mc-lock-badge" class="lock-badge">🔒 Kilitli (50 Kelime)</span>
+                            </div>
+                            <p>İngilizce kelimenin doğru Türkçe karşılığını 5 seçenek arasından bulun.</p>
+                            <div class="lock-progress-bar-container" id="mc-progress-container">
+                                <div class="lock-progress-bar" id="mc-progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <span id="mc-play-btn-text" class="play-btn">Kilitli →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OYUN SAHNELERİ -->
+                
+                <!-- 1. ADAM ASMACA EKRANI -->
+                <div id="game-stage-hangman" class="game-stage">
+                    <div class="game-stage-header">
+                        <button class="btn-back" onclick="quitGame()">← Geri Dön</button>
+                        <h2>Adam Asmaca</h2>
+                        <div class="score-display">Hak: <span id="hangman-lives">6</span></div>
+                    </div>
+                    
+                    <div class="hangman-container">
+                        <div class="hangman-visual">
+                            <svg height="200" width="200" id="hangman-svg" class="glass-panel">
+                                <!-- Gallow structure -->
+                                <line x1="20" y1="180" x2="140" y2="180" stroke="#fff" stroke-width="5" />
+                                <line x1="80" y1="180" x2="80" y2="20" stroke="#fff" stroke-width="5" />
+                                <line x1="80" y1="20" x2="140" y2="20" stroke="#fff" stroke-width="5" />
+                                <line x1="140" y1="20" x2="140" y2="50" stroke="#fff" stroke-width="3" />
+                                <!-- Hangman elements (dynamic) -->
+                                <circle id="hm-head" cx="140" cy="65" r="15" stroke="#ff5e62" stroke-width="3" fill="none" class="hm-part" />
+                                <line id="hm-body" x1="140" y1="80" x2="140" y2="120" stroke="#ff5e62" stroke-width="3" class="hm-part" />
+                                <line id="hm-arm-l" x1="140" y1="95" x2="120" y2="90" stroke="#ff5e62" stroke-width="3" class="hm-part" />
+                                <line id="hm-arm-r" x1="140" y1="95" x2="160" y2="90" stroke="#ff5e62" stroke-width="3" class="hm-part" />
+                                <line id="hm-leg-l" x1="140" y1="120" x2="120" y2="145" stroke="#ff5e62" stroke-width="3" class="hm-part" />
+                                <line id="hm-leg-r" x1="140" y1="120" x2="160" y2="145" stroke="#ff5e62" stroke-width="3" class="hm-part" />
+                            </svg>
+                        </div>
+                        
+                        <div class="hangman-word-info">
+                            <div class="game-hint">İpucu (Türkçe Anlamı): <strong id="hangman-hint">-</strong></div>
+                            <div id="hangman-word-display" class="word-letters-container"></div>
+                        </div>
+                        
+                        <div id="hangman-keyboard" class="keyboard-container"></div>
+                        
+                        <div id="hangman-result" class="game-popup-result">
+                            <h3 id="hangman-result-title">Kazandınız!</h3>
+                            <p id="hangman-result-text"></p>
+                            <button class="btn-primary" onclick="initHangmanGame()">Yeniden Oyna</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. KELİME EŞLEŞTİRME EKRANI -->
+                <div id="game-stage-matching" class="game-stage">
+                    <div class="game-stage-header">
+                        <button class="btn-back" onclick="quitGame()">← Geri Dön</button>
+                        <h2>Kelime Eşleştirme</h2>
+                        <div class="score-display">Hamle: <span id="matching-moves">0</span></div>
+                    </div>
+                    
+                    <div class="matching-container">
+                        <p class="game-tip">Aşağıdaki İngilizce kelimeleri ve Türkçe karşılıklarını eşleştirmek için sırayla üzerlerine tıklayın.</p>
+                        <div id="matching-grid" class="matching-grid-cards"></div>
+                        
+                        <div id="matching-result" class="game-popup-result">
+                            <h3>Tebrikler! 🎉</h3>
+                            <p>Tüm kelimeleri <strong id="matching-final-moves">0</strong> hamlede başarıyla eşleştirdiniz.</p>
+                            <button class="btn-primary" onclick="initMatchingGame()">Yeniden Oyna</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. SORU-CEVAP EKRANI -->
+                <div id="game-stage-flashcards" class="game-stage">
+                    <div class="game-stage-header">
+                        <button class="btn-back" onclick="quitGame()">← Geri Dön</button>
+                        <h2>Soru & Cevap (Flashcards)</h2>
+                        <div class="score-display">Puan: <span id="flashcard-score">0</span></div>
+                    </div>
+                    
+                    <div class="flashcards-mode-selector">
+                        <label>Soru Tipi:</label>
+                        <select id="flashcard-mode" onchange="initFlashcardGame()">
+                            <option value="en-tr">İngilizce → Türkçe</option>
+                            <option value="tr-en">Türkçe → İngilizce</option>
+                        </select>
+                    </div>
+
+                    <div class="flashcard-container">
+                        <div class="flashcard-card-outer" onclick="flipFlashcard()">
+                            <div class="flashcard-card" id="flashcard-flip-box">
+                                <div class="flashcard-front">
+                                    <span class="card-direction-label" id="fc-front-label">Soru</span>
+                                    <h3 id="flashcard-question-text">Kelime</h3>
+                                    <p class="click-to-flip">Çevirmek için karta tıklayın 🔄</p>
+                                </div>
+                                <div class="flashcard-back">
+                                    <span class="card-direction-label" id="fc-back-label">Doğru Cevap</span>
+                                    <h3 id="flashcard-answer-text">Anlamı</h3>
+                                    <p class="click-to-flip">Soruyu görmek için tıklayın 🔄</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flashcard-controls">
+                            <button class="btn-wrong" onclick="nextFlashcard(false)">❌ Bilemedim</button>
+                            <button class="btn-correct" onclick="nextFlashcard(true)">✅ Bildim</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 5 ŞIKLI DEĞERLENDİRME TESTİ -->
+                <div id="game-stage-multiple-choice" class="game-stage">
+                    <div class="game-stage-header">
+                        <button class="btn-back" onclick="quitGame()">← Geri Dön</button>
+                        <h2>5 Şıklı Kelime Değerlendirme Testi</h2>
+                        <div class="score-display">Doğru: <span id="mc-correct-score">0</span> / Soru: <span id="mc-question-index">0</span></div>
+                    </div>
+                    
+                    <div class="mc-test-container">
+                        <!-- Progress bar -->
+                        <div class="mc-progress-indicator-container">
+                            <div id="mc-test-progress" class="mc-progress-indicator-bar" style="width: 0%;"></div>
+                        </div>
+
+                        <div class="mc-question-card glass-panel">
+                            <span class="mc-q-badge">Soru</span>
+                            <h3 id="mc-question-word">English Word</h3>
+                            <p class="mc-instruction">Yukarıdaki İngilizce kelimenin Türkçe anlamı nedir?</p>
+                        </div>
+
+                        <div id="mc-options-container" class="mc-options-list">
+                            <!-- 5 Option buttons will be rendered here -->
+                            <button class="mc-option" onclick="selectMcOption(0)">A) Seçenek 1</button>
+                            <button class="mc-option" onclick="selectMcOption(1)">B) Seçenek 2</button>
+                            <button class="mc-option" onclick="selectMcOption(2)">C) Seçenek 3</button>
+                            <button class="mc-option" onclick="selectMcOption(3)">D) Seçenek 4</button>
+                            <button class="mc-option" onclick="selectMcOption(4)">E) Seçenek 5</button>
+                        </div>
+
+                        <div id="mc-feedback" class="mc-feedback-area">
+                            <p id="mc-feedback-text"></p>
+                            <button id="mc-btn-next" class="btn-primary" onclick="loadNextMcQuestion()" style="display: none;">Sonraki Soru →</button>
+                        </div>
+
+                        <!-- Result overlay inside the game stage -->
+                        <div id="mc-result-overlay" class="game-popup-result">
+                            <h2>Değerlendirme Raporu 📊</h2>
+                            <p>Testi tamamladınız!</p>
+                            <div class="mc-result-stats">
+                                <div class="mc-stat-item">
+                                    <span class="stat-num" id="mc-res-total">10</span>
+                                    <span class="stat-lbl">Toplam Soru</span>
+                                </div>
+                                <div class="mc-stat-item" style="color: #38ef7d;">
+                                    <span class="stat-num" id="mc-res-correct">0</span>
+                                    <span class="stat-lbl">Doğru</span>
+                                </div>
+                                <div class="mc-stat-item" style="color: #ff5e62;">
+                                    <span class="stat-num" id="mc-res-wrong">0</span>
+                                    <span class="stat-lbl">Yanlış</span>
+                                </div>
+                            </div>
+                            <p>Başarı Oranı: <strong id="mc-res-ratio">0%</strong></p>
+                            <button class="btn-primary" onclick="initMultipleChoiceGame()">Yeniden Başlat</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEKME 4: AYARLAR VE VERİ YÖNETİMİ EKRANI -->
+            <section id="tab-settings" class="tab-content">
+                <div class="section-title">
+                    <h2>Veri ve Ayarlar</h2>
+                    <p>Uygulama verilerinizi yedekleyebilir, silebilir veya örnek kelimelerle doldurabilirsiniz.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3>📥 Kelimeleri Dışa Aktar</h3>
+                        <p>Kelimelerinizi başka bir cihaza taşımak veya yedeklemek için JSON formatında bilgisayarınıza kaydedin.</p>
+                        <button class="btn-secondary" onclick="exportData()">Yedek İndir (JSON)</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>📤 Yedekten İçe Aktar</h3>
+                        <p>Daha önce indirmiş olduğunuz JSON formatındaki kelime yedeğinizi uygulamaya geri yükleyin.</p>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;" onchange="importData(event)">
+                        <button class="btn-secondary" onclick="document.getElementById('import-file-input').click()">Yedek Yükle (JSON)</button>
+                    </div>
+
+                    <div class="settings-card card-danger">
+                        <h3>🚨 Tüm Verileri Sıfırla</h3>
+                        <p>Kayıtlı tüm kelimelerinizi ve geçmişinizi kalıcı olarak siler. Bu işlem geri alınamaz!</p>
+                        <button class="btn-danger" onclick="resetAllData()">Tüm Verileri Temizle</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>💡 Test Örnek Kelimeleri Yükle</h3>
+                        <p>Hızlıca deneme yapmak ve 50 kelime sınırını aşarak 5 Şıklı Testi aktifleştirmek için 55 adet hazır kelime yükleyin.</p>
+                        <button class="btn-primary" onclick="loadSampleWords()">Örnek Kelimeleri Yükle</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ALT GEÇİŞ NAVİGASYON BAR (MOBILE-FIRST NAVBAR) -->
+        <nav class="app-nav">
+            <button class="nav-item active" onclick="switchTab('tab-add', this)">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Ekle</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('tab-list', this)">
+                <span class="nav-icon">📖</span>
+                <span class="nav-label">Liste</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('tab-games', this)">
+                <span class="nav-icon">🎓</span>
+                <span class="nav-label">Akademi</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('tab-settings', this)">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Ayarlar</span>
+            </button>
+        </nav>
+    </div>
+    
+    <!-- JS Dosyası -->
+    <script src="app.js"></script>
+</body>
+</html>
