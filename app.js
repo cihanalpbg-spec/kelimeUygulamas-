@@ -38,6 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Test kilidi durumunu güncelle
     checkMcTestLock();
+    
+    // Service Worker Kaydı (Çevrimdışı/Offline Çalışma için)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[PWA] Service Worker başarıyla kuruldu. Kapsam:', reg.scope))
+            .catch(err => console.error('[PWA] Service Worker kurulum hatası:', err));
+    }
 });
 
 // YEREL DEPOLAMA İŞLEMLERİ (LOCALSTORAGE)
