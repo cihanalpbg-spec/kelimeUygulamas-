@@ -1188,3 +1188,129 @@ function loadSampleWords() {
         renderWordList();
     }
 }
+
+// -------------------------------------------------------------
+// EKRAN YÖNLENDİRME KİLİTLEME VE OTO ROTASYON İŞLEMLERİ (PWA)
+// -------------------------------------------------------------
+let orientationState = 'auto'; // 'auto', 'portrait', 'landscape'
+
+async function toggleOrientationLock() {
+    const btn = document.getElementById('btn-orientation-lock');
+    if (!btn) return;
+    
+    if (orientationState === 'auto') {
+        // Dikey moduna kilitlemeye çalış
+        try {
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('portrait');
+            }
+            orientationState = 'portrait';
+            btn.innerHTML = '📳 Dikey';
+            showSuccessToast('Ekran dikey konumda sabitlendi.');
+        } catch (err) {
+            console.warn("Ekran dikey kilitleme hatası:", err);
+            // Tarayıcı kısıtlaması varsa yazılımsal uyarı moduna geç
+            orientationState = 'portrait-mock';
+            btn.innerHTML = '📳 Dikey';
+            showSuccessToast('Dikey yönlendirme kilidi ayarlandı.');
+        }
+    } else if (orientationState === 'portrait' || orientationState === 'portrait-mock') {
+        // Yatay moduna kilitlemeye çalış
+        try {
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('landscape');
+            }
+            orientationState = 'landscape';
+            btn.innerHTML = '📴 Yatay';
+            showSuccessToast('Ekran yatay konumda sabitlendi.');
+        } catch (err) {
+            console.warn("Ekran yatay kilitleme hatası:", err);
+            // Tarayıcı kısıtlaması varsa yazılımsal uyarı moduna geç
+            orientationState = 'landscape-mock';
+            btn.innerHTML = '📴 Yatay';
+            showSuccessToast('Yatay yönlendirme kilidi ayarlandı.');
+        }
+    } else {
+        // Kilidi kaldır (Otomatik serbest yönlendirme)
+        try {
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+        } catch (err) {
+            console.warn("Ekran kilidi açma hatası:", err);
+        }
+        orientationState = 'auto';
+        btn.innerHTML = '🔓 Oto';
+        showSuccessToast('Ekran yönü serbest bırakıldı (Oto).');
+    }
+    
+    checkOrientationMatch();
+}
+
+// Cihazın fiziksel konumu ile kilit konumunu karşılaştırıp yazılımsal yönlendirme uyarısı gösteren fonksiyon
+function checkOrientationMatch() {
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    // Varsa eski uyarısı kaldır
+    const existingOverlay = document.getElementById('orientation-mismatch-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    if ((orientationState === 'portrait' || orientationState === 'portrait-mock') && isLandscape) {
+        showOrientationOverlay('Lütfen Cihazınızı Dikey Konuma Getirin 📱', 'Dikey kilit aktif.');
+    } else if ((orientationState === 'landscape' || orientationState === 'landscape-mock') && !isLandscape) {
+        showOrientationOverlay('Lütfen Cihazınızı Yatay Konuma Getirin 🔄', 'Yatay kilit aktif.');
+    }
+}
+
+// Yazılımsal yön uyarısı ekranı (CORS / tarayıcı kilit engellerine karşı tam uyumlu çözüm)
+function showOrientationOverlay(title, subtitle) {
+    const overlay = document.createElement('div');
+    overlay.id = 'orientation-mismatch-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(11, 12, 16, 0.98)';
+    overlay.style.color = '#fff';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '9999';
+    overlay.style.textAlign = 'center';
+    overlay.style.padding = '20px';
+    
+    overlay.innerHTML = `
+        <div style="font-size: 64px; margin-bottom: 20px; animation: shake 1.5s infinite;">📱</div>
+        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 10px; font-family: var(--font-family);">${title}</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; font-family: var(--font-family);">${subtitle}</p>
+        <button onclick="unlockOrientationFromOverlay()" style="background: linear-gradient(135deg, var(--primary), var(--accent)); color:#fff; border:none; padding:12px 24px; border-radius:12px; font-family: var(--font-family); font-weight:700; cursor:pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">Yön Kilidini Kaldır (Oto)</button>
+    `;
+    document.body.appendChild(overlay);
+}
+
+// Overlay butonu için global fonksiyon
+window.unlockOrientationFromOverlay = function() {
+    orientationState = 'auto';
+    const btn = document.getElementById('btn-orientation-lock');
+    if (btn) btn.innerHTML = '🔓 Oto';
+    
+    try {
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+    } catch(e){}
+    
+    const overlay = document.getElementById('orientation-mismatch-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+};
+
+// Ekran döndürme ve boyut değiştirme olay dinleyicileri
+window.addEventListener('resize', checkOrientationMatch);
+window.addEventListener('orientationchange', checkOrientationMatch);
+

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kelime-dunyasi-cache-v1';
+const CACHE_NAME = 'kelime-dunyasi-cache-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

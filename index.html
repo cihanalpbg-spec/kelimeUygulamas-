@@ -38,7 +38,10 @@
                     <p>Vocabulary Master</p>
                 </div>
             </div>
-            <div class="header-stats">
+            <div class="header-stats" style="display: flex; gap: 8px; align-items: center;">
+                <button id="btn-orientation-lock" class="btn-orientation" onclick="toggleOrientationLock()" title="Ekran Yönünü Kilitle">
+                    🔓 Oto
+                </button>
                 <span class="stat-badge">
                     <span class="badge-label">Toplam Kelime:</span>
                     <span id="total-words-count" class="badge-value">0</span>

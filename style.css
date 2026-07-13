@@ -1319,3 +1319,83 @@ body {
     25% { transform: translateX(-6px); }
     75% { transform: translateX(6px); }
 }
+
+/* EKRAN YÖNLENDİRME (ORIENTATION) STİLLERİ VE DÜZENLEMELERİ */
+
+/* Sabitleme Butonu */
+.btn-orientation {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-family: var(--font-family);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: var(--transition-smooth);
+}
+
+.btn-orientation:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* Yatay Mod (Landscape) için Responsive Düzenlemeler */
+@media (orientation: landscape) {
+    /* Yatay modda telefonlarda ve tabletlerde yükseklik daraldığı için bazı alanları optimize ediyoruz */
+    .app-container {
+        max-width: 100% !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+    }
+    
+    .app-header {
+        padding: 10px 20px;
+    }
+    
+    .app-nav {
+        padding-bottom: 10px;
+    }
+    
+    /* Eşleştirme oyununda kart sayısını yan yana 4'e çıkartarak dikey yüksekliği koruyoruz */
+    .matching-grid-cards {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+    
+    /* Adam asmaca oyununda görsel ve kelimeyi yan yana getiriyoruz */
+    .hangman-container {
+        flex-direction: row !important;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .hangman-visual {
+        width: auto !important;
+    }
+    
+    .hangman-word-info {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    /* Klavye dikey alan kaplamasın diye 7 sütundan 9 sütuna çıkartılabilir */
+    .keyboard-container {
+        grid-template-columns: repeat(9, 1fr) !important;
+        padding: 8px;
+    }
+    
+    /* Ayarlar kartlarını yan yana dizelim */
+    .settings-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 16px;
+    }
+}
+
