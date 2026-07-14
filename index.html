@@ -70,12 +70,28 @@
                 <div id="method-manual" class="method-content active">
                     <div class="input-card">
                         <div class="input-group">
-                            <label for="input-english">İngilizce Kelime / İfade</label>
+                            <label for="input-english">İngilizce Kelime / İfade *</label>
                             <input type="text" id="input-english" placeholder="Örn: Accomplish, Apple, Go on..." autocomplete="off">
                         </div>
                         <div class="input-group">
-                            <label for="input-turkish">Türkçe Karşılığı / Anlamı</label>
+                            <label for="input-pronunciation">Türkçe Okunuşu (İsteğe Bağlı)</label>
+                            <input type="text" id="input-pronunciation" placeholder="Örn: Ekompliş, Epıl..." autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-turkish">Türkçe Karşılığı / Anlamı *</label>
                             <input type="text" id="input-turkish" placeholder="Örn: Başarmak, Elma, Devam etmek..." autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-memory">Hafıza Cümlesi (İsteğe Bağlı)</label>
+                            <textarea id="input-memory" placeholder="Kelimeyi hatırlatacak ipucu cümlesi... Kelimeleri renklendirmek için listeden düzenleyebilirsiniz." rows="2" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); color: #fff; padding: 12px 16px; border-radius: 10px; font-family: var(--font-family); font-size: 14px; outline: none; transition: var(--transition-smooth); resize: vertical;"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-synonyms">Eş Anlamlıları (Virgülle ayırın, İsteğe Bağlı)</label>
+                            <input type="text" id="input-synonyms" placeholder="Örn: achieve, attain" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label for="input-antonyms">Zıt Anlamlıları (Virgülle ayırın, İsteğe Bağlı)</label>
+                            <input type="text" id="input-antonyms" placeholder="Örn: fail, lose" autocomplete="off">
                         </div>
                         <button id="btn-save-manual" class="btn-primary" onclick="addWordManual()">
                             <span class="btn-icon">＋</span> Kelimeyi Kaydet
@@ -89,7 +105,7 @@
                         <div class="upload-icon">📁</div>
                         <h3>Dosyayı Buraya Sürükleyin veya Seçin</h3>
                         <p>Desteklenen formatlar: <strong>Word (.docx)</strong>, <strong>Excel (.xlsx, .xls)</strong> veya <strong>CSV (.csv)</strong></p>
-                        <p class="file-tip">⚠️ Dosyanızın ilk sütunu İngilizce kelimeleri, ikinci sütunu ise Türkçe anlamlarını içermelidir (Resimdeki şablon).</p>
+                        <p class="file-tip">⚠️ Dosyanız sırasıyla şu 6 sütunu içermelidir: 1. İngilizce Kelime, 2. Türkçe Okunuşu, 3. Türkçe Anlamı, 4. Hafıza Cümlesi, 5. Eş Anlamlılar, 6. Zıt Anlamlılar. (Mevcut renkli kelimeler Word dosyasından otomatik olarak korunacaktır.)</p>
                         <input type="file" id="file-input" accept=".docx, .xlsx, .xls, .csv" style="display: none;" onchange="handleFileSelect(event)">
                         <button class="btn-secondary" onclick="document.getElementById('file-input').click()">Dosya Seç</button>
                         <div id="file-info" class="file-info-text"></div>
@@ -129,6 +145,61 @@
                         <div class="empty-state">
                             <span class="empty-icon">📂</span>
                             <p>Henüz kelime eklenmedi.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEKME: KELİME ARŞİVİ EKRANI -->
+            <section id="tab-archive" class="tab-content">
+                <div class="section-title">
+                    <h2>Kelime Arşivi</h2>
+                    <p>Kelimelerinizin yüklendiği tarih ve saate göre kronolojik listesi (En yeni en üstte).</p>
+                </div>
+                <div class="list-controls">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="archive-search" placeholder="Arşivde kelime ara (İngilizce veya Türkçe)..." oninput="renderArchiveList()">
+                    </div>
+                </div>
+                <div class="list-container">
+                    <div class="list-header-row archive-header-row">
+                        <div>Kelime</div>
+                        <div>Türkçe Anlamı</div>
+                        <div>Yükleme Zamanı</div>
+                    </div>
+                    <div id="archive-list-container" class="words-list">
+                        <!-- Arşiv kelimeleri dinamik olarak buraya listelenecektir -->
+                        <div class="empty-state">
+                            <span class="empty-icon">📂</span>
+                            <p>Henüz kelime eklenmedi.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEKME: EŞ & ZIT ANLAMLAR EKRANI -->
+            <section id="tab-syn-ant" class="tab-content">
+                <div class="section-title">
+                    <h2>Eş & Zıt Anlamlar</h2>
+                    <p>Listedeki kelimenin eş/zıt anlamlı karşılıklarını ve özel hafıza cümlelerini düzenleyin.</p>
+                </div>
+                <div class="syn-ant-layout">
+                    <!-- Sol taraf: Kelime Seçim Listesi -->
+                    <div class="syn-ant-sidebar">
+                        <div class="search-box" style="margin-bottom: 12px;">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="syn-ant-search" placeholder="Kelime ara..." oninput="renderSynAntSidebar()">
+                        </div>
+                        <div id="syn-ant-words-list" class="syn-ant-words-list-container">
+                            <!-- Kelimeler buraya listelenecektir -->
+                        </div>
+                    </div>
+                    <!-- Sağ taraf: Eş/Zıt Anlam Düzenleme Paneli -->
+                    <div class="syn-ant-detail-pane" id="syn-ant-detail-pane">
+                        <div class="empty-detail-state">
+                            <span class="empty-icon">👈</span>
+                            <p>Eş ve zıt anlamlarını düzenlemek ve hafıza cümleleri yazmak için sol taraftaki listeden bir kelime seçin.</p>
                         </div>
                     </div>
                 </div>
@@ -384,6 +455,25 @@
                         <p>Hızlıca deneme yapmak ve 50 kelime sınırını aşarak 5 Şıklı Testi aktifleştirmek için 55 adet hazır kelime yükleyin.</p>
                         <button class="btn-primary" onclick="loadSampleWords()">Örnek Kelimeleri Yükle</button>
                     </div>
+
+                    <div class="settings-card">
+                        <h3>🔄 Bulut Senkronizasyonu</h3>
+                        <p>Kelimelerinizi tablet ve telefon arasında senkronize edin. Buluta yedekleyin veya başka bir cihazdan anında geri yükleyin.</p>
+                        <div class="sync-key-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="sync-key-input" placeholder="Senkronizasyon Kodu (Cihaz Anahtarı)" style="flex: 1; font-size: 13px; padding: 10px; background: rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; border-radius:10px;">
+                                <button class="btn-secondary" onclick="generateSyncKey()" style="font-size: 11px; padding: 10px 14px;">Kod Üret</button>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                <button class="btn-primary" onclick="syncUpload()" style="flex: 1; padding: 10px; font-size: 12px; border-radius: 10px; background: linear-gradient(135deg, var(--secondary), var(--primary));">
+                                    ☁️ Buluta Gönder
+                                </button>
+                                <button class="btn-secondary" onclick="syncDownload()" style="flex: 1; padding: 10px; font-size: 12px; border-radius: 10px;">
+                                    📥 Buluttan Güncelle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -398,6 +488,14 @@
             <button class="nav-item" onclick="switchTab('tab-list', this)">
                 <span class="nav-icon">📖</span>
                 <span class="nav-label">Liste</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('tab-archive', this)">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Arşiv</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('tab-syn-ant', this)">
+                <span class="nav-icon">🔗</span>
+                <span class="nav-label">Eş/Zıt</span>
             </button>
             <button class="nav-item" onclick="switchTab('tab-games', this)">
                 <span class="nav-icon">🎓</span>
