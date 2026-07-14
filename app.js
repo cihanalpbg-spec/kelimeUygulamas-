@@ -68,10 +68,10 @@ function loadFromStorage() {
                 
                 // Eski string biçimleri temizleme ve diziye çevirme
                 if (typeof w.synonyms === 'string') {
-                    w.synonyms = w.synonyms ? w.synonyms.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
+                    w.synonyms = parseSynAntString(w.synonyms);
                 }
                 if (typeof w.antonyms === 'string') {
-                    w.antonyms = w.antonyms ? w.antonyms.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
+                    w.antonyms = parseSynAntString(w.antonyms);
                 }
 
                 w.synonyms.forEach(s => {
@@ -235,11 +235,8 @@ function addWordManual() {
     const tr = trInput.value.trim();
     const mem = memInput.value.trim();
     
-    const synStr = synInput.value.trim();
-    const synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
-    
-    const antStr = antInput.value.trim();
-    const antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
+    const synonyms = parseSynAntString(synStr);
+    const antonyms = parseSynAntString(antStr);
 
     if (!eng || !tr) {
         alert("Lütfen en azından İngilizce kelime ve Türkçe anlam alanlarını doldurun.");
@@ -305,9 +302,9 @@ function importFromPaste() {
                 tr = parts[2].trim();
                 mem = parts[3].trim();
                 const synStr = parts[4].trim();
-                synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
+                synonyms = parseSynAntString(synStr);
                 const antStr = parts[5].trim();
-                antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
+                antonyms = parseSynAntString(antStr);
             } else {
                 tr = parts[1].trim();
             }
@@ -419,10 +416,10 @@ function parseWordFile(file) {
                             memorySentence = cols[3].innerHTML.trim(); // HTML etiketlerini ve renk stillerini koru
                             
                             const synStr = cols[4].textContent.trim();
-                            synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
+                            synonyms = parseSynAntString(synStr);
                             
                             const antStr = cols[5].textContent.trim();
-                            antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
+                            antonyms = parseSynAntString(antStr);
                         } else {
                             tr = cols[1].textContent.trim();
                         }
@@ -490,10 +487,10 @@ function parseExcelFile(file) {
                         memorySentence = String(row[3] || '').trim();
                         
                         const synStr = String(row[4] || '').trim();
-                        synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
+                        synonyms = parseSynAntString(synStr);
                         
                         const antStr = String(row[5] || '').trim();
-                        antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
+                        antonyms = parseSynAntString(antStr);
                     } else {
                         tr = String(row[1]).trim();
                     }
@@ -1231,11 +1228,11 @@ function importData(event) {
                         // Eş/Zıt anlam nesne dizisi uyumluluğu
                         let syns = w.synonyms || [];
                         if (typeof syns === 'string') {
-                            syns = syns ? syns.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
+                            syns = parseSynAntString(syns);
                         }
                         let ants = w.antonyms || [];
                         if (typeof ants === 'string') {
-                            ants = ants ? ants.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
+                            ants = parseSynAntString(ants);
                         }
 
                         return {
@@ -1556,6 +1553,32 @@ function getWordMeaning(englishWord) {
     if (!englishWord) return '';
     const found = words.find(w => w.english.toLowerCase().trim() === englishWord.toLowerCase().trim());
     return found ? found.turkish : '';
+}
+
+function parseSynAntString(str) {
+    if (!str || typeof str !== 'string') return [];
+    
+    // Split by comma or newline, filtering out empty entries
+    const items = str.split(/[\n,]+/).map(item => item.trim()).filter(Boolean);
+    
+    return items.map(item => {
+        const colonIndex = item.indexOf(':');
+        if (colonIndex > -1) {
+            const word = item.substring(0, colonIndex).trim();
+            const meaning = item.substring(colonIndex + 1).trim();
+            return {
+                word: word,
+                meaning: meaning,
+                memorySentence: ''
+            };
+        } else {
+            return {
+                word: item,
+                meaning: '',
+                memorySentence: ''
+            };
+        }
+    }).filter(obj => obj.word);
 }
 
 function renderSynAntDetail(index) {
