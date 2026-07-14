@@ -32,7 +32,7 @@
         <!-- ÜST PANEL (HEADER) -->
         <header class="app-header">
             <div class="header-logo">
-                <span class="logo-icon">🚀</span>
+                <img src="logo.jpg" alt="Logo" class="logo-img" style="width: 38px; height: 38px; border-radius: 8px; border: 1.5px solid var(--secondary); object-fit: cover; box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);">
                 <div class="logo-text">
                     <h1>Kelime Dünyası</h1>
                     <p>Vocabulary Master</p>
@@ -137,7 +137,9 @@
                     <div class="list-header-row">
                         <div>İngilizce Kelime</div>
                         <div>Türkçe Anlamı</div>
-                        <div>Eklenme Tarihi</div>
+                        <div>Hafıza Cümlesi</div>
+                        <div>Eş Anlamlılar</div>
+                        <div>Zıt Anlamlılar</div>
                         <div style="text-align: center;">İşlem</div>
                     </div>
                     <div id="words-list-container" class="words-list">
@@ -454,6 +456,16 @@
                         <h3>💡 Test Örnek Kelimeleri Yükle</h3>
                         <p>Hızlıca deneme yapmak ve 50 kelime sınırını aşarak 5 Şıklı Testi aktifleştirmek için 55 adet hazır kelime yükleyin.</p>
                         <button class="btn-primary" onclick="loadSampleWords()">Örnek Kelimeleri Yükle</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>🎨 Arayüz Arka Plan Rengi</h3>
+                        <p>Uygulamanın genel arka plan rengini istediğiniz renk olarak özelleştirin.</p>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
+                            <input type="color" id="bg-color-picker" onchange="changeBgColor(this.value)" style="width: 50px; height: 35px; border: none; border-radius: 6px; cursor: pointer; background: transparent;">
+                            <span id="bg-color-hex" style="font-family: monospace; font-size: 14px; color: var(--text-secondary);">#0b0c10</span>
+                            <button class="btn-secondary" onclick="resetBgColor()" style="font-size: 11px; padding: 6px 12px; border-radius: 6px; margin-left: auto;">Varsayılana Dön</button>
+                        </div>
                     </div>
 
                     <div class="settings-card">

@@ -33,6 +33,7 @@ let mcState = {
 // UYGULAMA BAŞLANGICI
 document.addEventListener("DOMContentLoaded", () => {
     loadFromStorage();
+    loadTheme();
     initDragAndDrop();
     updateDashboardStats();
     
@@ -67,11 +68,18 @@ function loadFromStorage() {
                 
                 // Eski string biçimleri temizleme ve diziye çevirme
                 if (typeof w.synonyms === 'string') {
-                    w.synonyms = w.synonyms ? w.synonyms.split(',').map(s => ({ word: s.trim(), memorySentence: '' })).filter(s => s.word) : [];
+                    w.synonyms = w.synonyms ? w.synonyms.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
                 }
                 if (typeof w.antonyms === 'string') {
-                    w.antonyms = w.antonyms ? w.antonyms.split(',').map(a => ({ word: a.trim(), memorySentence: '' })).filter(a => a.word) : [];
+                    w.antonyms = w.antonyms ? w.antonyms.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
                 }
+
+                w.synonyms.forEach(s => {
+                    if (s.meaning === undefined) s.meaning = '';
+                });
+                w.antonyms.forEach(a => {
+                    if (a.meaning === undefined) a.meaning = '';
+                });
             });
         } catch (e) {
             console.error("Depolama verisi okunamadı:", e);
@@ -228,10 +236,10 @@ function addWordManual() {
     const mem = memInput.value.trim();
     
     const synStr = synInput.value.trim();
-    const synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), memorySentence: '' })).filter(s => s.word) : [];
+    const synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
     
     const antStr = antInput.value.trim();
-    const antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), memorySentence: '' })).filter(a => a.word) : [];
+    const antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
 
     if (!eng || !tr) {
         alert("Lütfen en azından İngilizce kelime ve Türkçe anlam alanlarını doldurun.");
@@ -297,9 +305,9 @@ function importFromPaste() {
                 tr = parts[2].trim();
                 mem = parts[3].trim();
                 const synStr = parts[4].trim();
-                synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), memorySentence: '' })).filter(s => s.word) : [];
+                synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
                 const antStr = parts[5].trim();
-                antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), memorySentence: '' })).filter(a => a.word) : [];
+                antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
             } else {
                 tr = parts[1].trim();
             }
@@ -411,10 +419,10 @@ function parseWordFile(file) {
                             memorySentence = cols[3].innerHTML.trim(); // HTML etiketlerini ve renk stillerini koru
                             
                             const synStr = cols[4].textContent.trim();
-                            synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), memorySentence: '' })).filter(s => s.word) : [];
+                            synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
                             
                             const antStr = cols[5].textContent.trim();
-                            antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), memorySentence: '' })).filter(a => a.word) : [];
+                            antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
                         } else {
                             tr = cols[1].textContent.trim();
                         }
@@ -482,10 +490,10 @@ function parseExcelFile(file) {
                         memorySentence = String(row[3] || '').trim();
                         
                         const synStr = String(row[4] || '').trim();
-                        synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), memorySentence: '' })).filter(s => s.word) : [];
+                        synonyms = synStr ? synStr.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
                         
                         const antStr = String(row[5] || '').trim();
-                        antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), memorySentence: '' })).filter(a => a.word) : [];
+                        antonyms = antStr ? antStr.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
                     } else {
                         tr = String(row[1]).trim();
                     }
@@ -556,6 +564,10 @@ function renderWordList() {
     let html = '';
     filtered.forEach((w, index) => {
         const realIndex = words.findIndex(x => x.english === w.english && x.turkish === w.turkish);
+        const memText = w.memorySentence || '-';
+        const synListText = w.synonyms && w.synonyms.length > 0 ? w.synonyms.map(s => s.word).join(', ') : '-';
+        const antListText = w.antonyms && w.antonyms.length > 0 ? w.antonyms.map(a => a.word).join(', ') : '-';
+        
         html += `
             <div class="word-row" onclick="showWordDetail(${realIndex}, event)">
                 <div class="word-eng" style="display: flex; align-items: center; justify-content: space-between;">
@@ -563,7 +575,9 @@ function renderWordList() {
                     <button class="speaker-btn" onclick="speakEnglish('${escapeHtml(w.english)}'); event.stopPropagation();" title="Telaffuz Et">🔊</button>
                 </div>
                 <div class="word-tr">${escapeHtml(w.turkish)}</div>
-                <div class="word-date">${w.timestamp || '-'}</div>
+                <div class="word-memory">${memText}</div>
+                <div class="word-syns">${escapeHtml(synListText)}</div>
+                <div class="word-ants">${escapeHtml(antListText)}</div>
                 <div style="display: flex; justify-content: center;" onclick="event.stopPropagation();">
                     <button class="btn-delete-row" onclick="deleteWord(${realIndex})" title="Kelimeyi Sil">🗑️</button>
                 </div>
@@ -1217,11 +1231,11 @@ function importData(event) {
                         // Eş/Zıt anlam nesne dizisi uyumluluğu
                         let syns = w.synonyms || [];
                         if (typeof syns === 'string') {
-                            syns = syns ? syns.split(',').map(s => ({ word: s.trim(), memorySentence: '' })).filter(s => s.word) : [];
+                            syns = syns ? syns.split(',').map(s => ({ word: s.trim(), meaning: '', memorySentence: '' })).filter(s => s.word) : [];
                         }
                         let ants = w.antonyms || [];
                         if (typeof ants === 'string') {
-                            ants = ants ? ants.split(',').map(a => ({ word: a.trim(), memorySentence: '' })).filter(a => a.word) : [];
+                            ants = ants ? ants.split(',').map(a => ({ word: a.trim(), meaning: '', memorySentence: '' })).filter(a => a.word) : [];
                         }
 
                         return {
@@ -1538,6 +1552,12 @@ function selectSynAntWord(index) {
     renderSynAntDetail(index);
 }
 
+function getWordMeaning(englishWord) {
+    if (!englishWord) return '';
+    const found = words.find(w => w.english.toLowerCase().trim() === englishWord.toLowerCase().trim());
+    return found ? found.turkish : '';
+}
+
 function renderSynAntDetail(index) {
     const w = words[index];
     const detailPane = document.getElementById('syn-ant-detail-pane');
@@ -1546,6 +1566,7 @@ function renderSynAntDetail(index) {
     let synHtml = '';
     if (w.synonyms && w.synonyms.length > 0) {
         w.synonyms.forEach((syn, sIdx) => {
+            const synMeaning = syn.meaning || getWordMeaning(syn.word);
             synHtml += `
                 <div class="syn-ant-item">
                     <div class="syn-ant-item-top">
@@ -1555,6 +1576,15 @@ function renderSynAntDetail(index) {
                             <button class="btn-delete-row" onclick="deleteSynAntItem(${index}, 'synonyms', ${sIdx})" style="font-size:11px; padding:2px 4px;">🗑️</button>
                         </div>
                     </div>
+                    
+                    <!-- ANLAM ALANI -->
+                    <div class="syn-ant-item-meaning editable-field ${!synMeaning ? 'empty-field' : ''}" 
+                         onclick="makeEditable(this, ${index}, 'synonyms.${sIdx}.meaning', 'input')"
+                         style="margin-bottom: 2px;">
+                        <strong>Anlamı:</strong> ${synMeaning ? escapeHtml(synMeaning) : '— Anlam yazmak için tıklayın —'}
+                    </div>
+
+                    <!-- HAFIZA CÜMLESİ ALANI -->
                     <div class="syn-ant-item-memory editable-field ${!syn.memorySentence ? 'empty-field' : ''}" 
                          onclick="makeEditable(this, ${index}, 'synonyms.${sIdx}.memorySentence', 'textarea')">
                         ${syn.memorySentence ? syn.memorySentence : '— Hafıza cümlesi yazmak için tıklayın —'}
@@ -1569,6 +1599,7 @@ function renderSynAntDetail(index) {
     let antHtml = '';
     if (w.antonyms && w.antonyms.length > 0) {
         w.antonyms.forEach((ant, aIdx) => {
+            const antMeaning = ant.meaning || getWordMeaning(ant.word);
             antHtml += `
                 <div class="syn-ant-item">
                     <div class="syn-ant-item-top">
@@ -1578,6 +1609,15 @@ function renderSynAntDetail(index) {
                             <button class="btn-delete-row" onclick="deleteSynAntItem(${index}, 'antonyms', ${aIdx})" style="font-size:11px; padding:2px 4px;">🗑️</button>
                         </div>
                     </div>
+
+                    <!-- ANLAM ALANI -->
+                    <div class="syn-ant-item-meaning editable-field ${!antMeaning ? 'empty-field' : ''}" 
+                         onclick="makeEditable(this, ${index}, 'antonyms.${aIdx}.meaning', 'input')"
+                         style="margin-bottom: 2px;">
+                        <strong>Anlamı:</strong> ${antMeaning ? escapeHtml(antMeaning) : '— Anlam yazmak için tıklayın —'}
+                    </div>
+
+                    <!-- HAFIZA CÜMLESİ ALANI -->
                     <div class="syn-ant-item-memory editable-field ${!ant.memorySentence ? 'empty-field' : ''}" 
                          onclick="makeEditable(this, ${index}, 'antonyms.${aIdx}.memorySentence', 'textarea')">
                         ${ant.memorySentence ? ant.memorySentence : '— Hafıza cümlesi yazmak için tıklayın —'}
@@ -1595,7 +1635,14 @@ function renderSynAntDetail(index) {
                 <h3 style="font-size:18px; font-weight:800; color:#fff;">${escapeHtml(w.english)}</h3>
                 <button class="speaker-btn" onclick="speakEnglish('${escapeHtml(w.english)}')">🔊</button>
             </div>
-            <span style="font-size:11px; color:var(--text-secondary);">${escapeHtml(w.turkish)}</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:12px; color:var(--text-muted);">Kelime Anlamı: </span>
+                <span class="syn-ant-main-meaning editable-field ${!w.turkish ? 'empty-field' : ''}" 
+                      onclick="makeEditable(this, ${index}, 'turkish')" 
+                      style="font-size:14px; font-weight: 600; color:var(--secondary);">
+                    ${w.turkish ? escapeHtml(w.turkish) : '— Anlam yazmak için tıklayın —'}
+                </span>
+            </div>
         </div>
         
         <!-- EŞ ANLAMLILAR KUTUSU -->
@@ -1626,11 +1673,22 @@ function addSynAntItemPrompt(index, type) {
     const wordText = prompt(`${type === 'synonyms' ? 'Eş Anlamlı' : 'Zıt Anlamlı'} yeni İngilizce kelime girin:`);
     if (!wordText || !wordText.trim()) return;
 
+    const cleanWord = wordText.trim();
+    let autoMeaning = getWordMeaning(cleanWord);
+    let meaningText = '';
+    
+    if (autoMeaning) {
+        meaningText = autoMeaning;
+    } else {
+        meaningText = prompt("Türkçe anlamını girin (İsteğe bağlı):") || '';
+    }
+
     const memoryText = prompt("Hafıza cümlesi girin (İsteğe bağlı):") || '';
 
     if (!words[index][type]) words[index][type] = [];
     words[index][type].push({
-        word: wordText.trim(),
+        word: cleanWord,
+        meaning: meaningText.trim(),
         memorySentence: memoryText.trim()
     });
 
@@ -1755,6 +1813,11 @@ function makeEditable(element, index, fieldPath, type = 'input') {
         value = w[fieldPath];
     } else if (keys.length === 3) {
         value = w[keys[0]][keys[1]][keys[2]];
+        // Fallback for empty stored meaning of synonyms/antonyms
+        if (keys[2] === 'meaning' && !value) {
+            const item = w[keys[0]][keys[1]];
+            value = getWordMeaning(item.word);
+        }
     }
 
     const rawValue = value || '';
@@ -1798,6 +1861,13 @@ function makeEditable(element, index, fieldPath, type = 'input') {
             w[fieldPath] = newVal;
         } else if (keys.length === 3) {
             w[keys[0]][keys[1]][keys[2]] = newVal;
+            // If user updates synonym/antonym word, automatically set its meaning if currently empty
+            if (keys[2] === 'word') {
+                const item = w[keys[0]][keys[1]];
+                if (!item.meaning) {
+                    item.meaning = getWordMeaning(newVal);
+                }
+            }
         }
 
         saveToStorage();
@@ -2042,6 +2112,35 @@ async function syncDownload() {
     } catch (err) {
         console.error(err);
         alert("Buluttan veri çekilirken bağlantı hatası oluştu.");
+    }
+}
+
+// 10. ARAYÜZ TEMA / ARKA PLAN RENGİ AYARLARI
+function changeBgColor(color) {
+    document.documentElement.style.setProperty('--bg-main', color);
+    localStorage.setItem('kelime_dunyasi_bg_color', color);
+    const picker = document.getElementById('bg-color-picker');
+    const label = document.getElementById('bg-color-hex');
+    if (picker) picker.value = color;
+    if (label) label.innerText = color.toUpperCase();
+}
+
+function resetBgColor() {
+    const defaultColor = '#0b0c10';
+    document.documentElement.style.setProperty('--bg-main', defaultColor);
+    localStorage.removeItem('kelime_dunyasi_bg_color');
+    const picker = document.getElementById('bg-color-picker');
+    const label = document.getElementById('bg-color-hex');
+    if (picker) picker.value = defaultColor;
+    if (label) label.innerText = defaultColor.toUpperCase();
+}
+
+function loadTheme() {
+    const savedBg = localStorage.getItem('kelime_dunyasi_bg_color');
+    if (savedBg) {
+        changeBgColor(savedBg);
+    } else {
+        resetBgColor();
     }
 }
 
